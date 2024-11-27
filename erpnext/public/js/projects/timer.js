@@ -11,8 +11,18 @@ erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
 				reqd: 1,
 				options: "Activity Type",
 			},
-			{ fieldtype: "Link", label: __("Project"), fieldname: "project", options: "Project" },
-			{ fieldtype: "Link", label: __("Task"), fieldname: "task", options: "Task" },
+			{ fieldtype: "Section Break"},
+			{ fieldtype: "Check", label: __("Is Billable"), fieldname: "is_billable" },
+            { fieldtype: "Column Break" },
+            { fieldtype: "Check", label: __("Non-Billable"), fieldname: "custom_non_billable" },
+            { fieldtype: "Section Break" },
+            { fieldtype: "Int", label: __("Count"), fieldname: "custom_count" },
+            {
+                fieldtype: "Link",
+                label: __("Task Element"),
+                fieldname: "custom_task_element",
+                options: "Task Element",
+            },
 			{ fieldtype: "Float", label: __("Expected Hrs"), fieldname: "expected_hours" },
 			{ fieldtype: "Section Break" },
 			{ fieldtype: "HTML", fieldname: "timer_html" },
@@ -22,8 +32,10 @@ erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
 	if (row) {
 		dialog.set_values({
 			activity_type: row.activity_type,
-			project: row.project,
-			task: row.task,
+			is_billable: row.is_billable,
+            custom_non_billable: row.custom_non_billable,
+            custom_count: row.custom_count,
+            custom_task_element: row.custom_task_element,
 			expected_hours: row.expected_hours,
 		});
 	}
@@ -39,7 +51,7 @@ erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
 			</div>
 			<div class="playpause text-center">
 				<button class= "btn btn-primary btn-start"> ${__("Start")} </button>
-				<button class= "btn btn-primary btn-complete"> ${__("Complete")} </button>
+				<button class= "btn btn-success btn-complete"> ${__("Complete")} </button>
 			</div>
 		`;
 	}
@@ -81,9 +93,11 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
 			}
 			row = frappe.model.add_child(frm.doc, "Timesheet Detail", "time_logs");
 			row.activity_type = args.activity_type;
+			row.is_billable = args.is_billable;
+            row.custom_non_billable = args.custom_non_billable;
+            row.custom_count = args.custom_count;
+            row.custom_task_element = args.custom_task_element;
 			row.from_time = frappe.datetime.get_datetime_as_string();
-			row.project = args.project;
-			row.task = args.task;
 			row.expected_hours = args.expected_hours;
 			row.completed = 0;
 			let d = moment(row.from_time);
@@ -110,12 +124,14 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
 
 	// Stop the timer and update the time logged by the timer on click of 'Complete' button
 	$btn_complete.click(function () {
-		var grid_row = cur_frm.fields_dict["time_logs"].grid.get_row(row.idx - 1);
+		var grid_row = frm.fields_dict["time_logs"].grid.get_row(row.idx - 1);
 		var args = dialog.get_values();
 		grid_row.doc.completed = 1;
 		grid_row.doc.activity_type = args.activity_type;
-		grid_row.doc.project = args.project;
-		grid_row.doc.task = args.task;
+		grid_row.doc.is_billable = args.is_billable;
+        grid_row.doc.custom_non_billable = args.custom_non_billable;
+        grid_row.doc.custom_count = args.custom_count;
+        grid_row.doc.custom_task_element = args.custom_task_element;
 		grid_row.doc.expected_hours = args.expected_hours;
 		grid_row.doc.hours = currentIncrement / 3600;
 		grid_row.doc.to_time = frappe.datetime.now_datetime();
