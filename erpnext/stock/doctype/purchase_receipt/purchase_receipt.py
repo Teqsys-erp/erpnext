@@ -907,7 +907,7 @@ def update_billing_percentage(pr_doc, update_modified=True, adjust_incoming_rate
 
 		if adjust_incoming_rate:
 			adjusted_amt = 0.0
-			if item.billed_amt and item.amount:
+			if item.billed_amt is not None and item.amount is not None:
 				adjusted_amt = flt(item.billed_amt) - flt(item.amount)
 
 			item.db_set("rate_difference_with_purchase_invoice", adjusted_amt, update_modified=False)
