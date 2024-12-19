@@ -526,9 +526,15 @@ def get_accounting_entries(
 	query = apply_additional_conditions(doctype, query, from_date, ignore_closing_entries, filters)
 	query = query.where(gl_entry.account.isin(accounts))
 
-	entries = query.run(as_dict=True)
+	from frappe.desk.reportview import build_match_conditions
 
-	return entries
+	query, params = query.walk()
+	match_conditions = build_match_conditions(doctype)
+
+	if match_conditions:
+		query += "and" + match_conditions
+
+	return frappe.db.sql(query, params, as_dict=True)
 
 
 def apply_additional_conditions(doctype, query, from_date, ignore_closing_entries, filters):
