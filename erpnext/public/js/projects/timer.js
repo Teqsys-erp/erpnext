@@ -1,4 +1,3 @@
-
 frappe.provide("erpnext.timesheet");
 
 erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
@@ -15,7 +14,7 @@ erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
                     set_billable_non_billable(dialog);
                 },
             },
-                        {
+            {
                 fieldtype: "Link",
                 label: __("Task Element"),
                 fieldname: "custom_task_element",
@@ -28,7 +27,7 @@ erpnext.timesheet.timer = function (frm, row, timestamp = 0) {
             { fieldtype: "Check", label: __("Is Billable"), fieldname: "is_billable" },
             { fieldtype: "Column Break" },
             { fieldtype: "Check", label: __("Non-Billable"), fieldname: "custom_non_billable" },
-                        { fieldtype: "Section Break" },
+            { fieldtype: "Section Break" },
             { fieldtype: "HTML", fieldname: "timer_html" },
         ],
     });
@@ -99,28 +98,9 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
     var $btn_complete = dialog.$wrapper.find(".playpause .btn-complete");
     var interval = null;
 
-    var userId = frappe.session.user;
-    var localStorageKey = `timesheet_timer_${userId}_${frm.doc.name}`;
-    var savedState = JSON.parse(localStorage.getItem(localStorageKey)) || {};
-
-    var currentIncrement = savedState.currentIncrement || (row && row.current_increment) || timestamp; // Default to timestamp
-    var isPaused = savedState.isPaused || (row && row.is_paused) || false; // Default to false
-    var initialized = savedState.initialized || (row ? true : false);
-
-    // Save state to localStorage
-    function saveStateToLocalStorage() {
-        localStorage.setItem(localStorageKey, JSON.stringify({
-            currentIncrement,
-            isPaused,
-            initialized
-        }));
-    }
-
-    // Clear state from localStorage
-    function clearStateFromLocalStorage() {
-        localStorage.removeItem(localStorageKey);
-    }
-
+    var currentIncrement = (row && row.current_increment) || timestamp; // Default to timestamp
+    var isPaused = (row && row.is_paused) || false; 
+    var initialized = row ? true : false;
 
         dialog.onhide = function () {
          if (isPaused) { // Check if isPaused is true
@@ -132,7 +112,6 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
             frm.refresh_field("time_logs"); // Update the child table in the parent document
            // frm.save(); // Save changes to the database
         }
-                saveStateToLocalStorage(); // Persist to localStorage
     }
 };
 
@@ -174,7 +153,7 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
             row.from_time = frappe.datetime.get_datetime_as_string();
             row.expected_hours = args.expected_hours;
             row.completed = 0;
-                        row.custom_timer_status = "Active";
+            row.custom_timer_status = "Active";
             frm.set_value("custom_timer_status", "Active");
            // frm.script_manager.trigger("custom_timer_status", row.doctype, row.name);
 
@@ -191,8 +170,6 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
 
         if (!initialized) {
             initialized = true;
-                        isPaused = false;
-            saveStateToLocalStorage(); // Persist state
             $btn_start.hide();
             $btn_pause.show();
             $btn_complete.show();
@@ -202,16 +179,13 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
 
     $btn_pause.click(function () {
         isPaused = true;
-
         row.is_paused = true; // Persist the paused state
         row.current_increment = currentIncrement; // Persist the current increment
         row.custom_timer_status = "Paused";  // Set status as Paused in child table
         frm.set_value("custom_timer_status", "Paused");  // this set a timer status in parent
-                saveStateToLocalStorage(); // Persist state
         frm.save();  // Save the row with paused time and status
 
         clearInterval(interval);
-         updateStopwatch(currentIncrement);
         //frm.refresh_field("time_logs"); // Save the state in the form
         $btn_pause.hide();
         $btn_resume.show();
@@ -224,7 +198,6 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
         row.custom_timer_status = "Active";  // Set status as Active in child table
         frm.set_value("custom_timer_status", "Active");  // this set a timer status in parent
         frm.save();  // Save the updated status
-                saveStateToLocalStorage(); // Persist state
         initializeTimer();
         $btn_resume.hide();
         $btn_pause.show();
@@ -245,13 +218,11 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
         grid_row.doc.live_timer = formatTime(currentIncrement);
         grid_row.doc.custom_timer_status = null;
         frm.set_value("custom_timer_status", null);
-        grid_row.doc.current_increment = 0;
        // frm.script_manager.trigger("custom_timer_status", row.doctype, row.name);
 
         grid_row.refresh();
         frm.dirty();
         frm.save();
-                clearStateFromLocalStorage(); // Clear state
         reset();
         dialog.hide();
     });
@@ -260,7 +231,6 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
         interval = setInterval(function () {
             if (!isPaused) {
                 var current = setCurrentIncrement();
-                                saveStateToLocalStorage(); // Persist state
                 updateStopwatch(current);
             }
         }, 1000);
@@ -314,7 +284,6 @@ erpnext.timesheet.control_timer = function (frm, dialog, row, timestamp = 0) {
         currentIncrement = 0;
         initialized = false;
         clearInterval(interval);
-                clearStateFromLocalStorage(); // Clear state
         $(".hours").text("00");
         $(".minutes").text("00");
         $(".seconds").text("00");
