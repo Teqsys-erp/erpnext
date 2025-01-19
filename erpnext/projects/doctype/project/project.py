@@ -87,6 +87,8 @@ class Project(Document):
 				color=task_details.color,
 				template_task=task_details.name,
 				priority=task_details.priority,
+				custom_activity_for=task_details.custom_activity_for,
+                custom_category=task_details.custom_category,
 			)
 		).insert()
 
