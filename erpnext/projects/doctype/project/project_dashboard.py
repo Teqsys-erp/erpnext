@@ -9,8 +9,13 @@ def get_data():
 		"transactions": [
 			{
 				"label": _("Project"),
-				"items": ["Task", "Timesheet", "Transmittal", "RFI", "Error", "Quality Check", "Project Update"],
+				"items": ["Task", "Timesheet", "Project Update"],
 			},
-			{"label": _("Sales"), "items": ["Sales Order", "Delivery Note", "Sales Invoice"]}
+			{
+				"label": _("Project Tool"),
+				"items": ["Project Schedule", "Transmittal", "RFI", "Error", "Quality Check"],
+			},
+			{"label": _("Sales"), "items": ["Sales Order", "Delivery Note", "Sales Invoice"]},
+			{"label": _("Purchase"), "items": ["Purchase Order", "Purchase Receipt", "Purchase Invoice"]},
 		],
 	}
