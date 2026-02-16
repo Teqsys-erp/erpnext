@@ -828,7 +828,7 @@ class TestQuotation(FrappeTestCase):
 		# item code same but description different
 		make_item("_Test Item 2", {"is_stock_item": 1})
 
-		quotation = make_quotation(qty=1, rate=100, do_not_submit=1)
+		quotation = make_quotation(qty=10, rate=100, do_not_submit=1)
 
 		# duplicate items
 		for qty in [1, 1, 2, 3]:
@@ -842,7 +842,7 @@ class TestQuotation(FrappeTestCase):
 		sales_order.delivery_date = nowdate()
 
 		self.assertEqual(len(sales_order.items), 6)
-		self.assertEqual(sales_order.items[0].qty, 1)
+		self.assertEqual(sales_order.items[0].qty, 10)
 		self.assertEqual(sales_order.items[-1].qty, 5)
 
 		# Row 1: 10, Row 4: 1, Row 5: 1
@@ -884,6 +884,18 @@ class TestQuotation(FrappeTestCase):
 			expected_rate,
 			f"Expected conversion rate {expected_rate}, got {quotation.conversion_rate}",
 		)
+
+	def test_over_order_limit(self):
+		from erpnext.selling.doctype.quotation.quotation import make_sales_order
+
+		quotation = make_quotation(qty=5)
+		so1 = make_sales_order(quotation.name)
+		so2 = make_sales_order(quotation.name)
+		so1.delivery_date = nowdate()
+		so2.delivery_date = nowdate()
+
+		so1.submit()
+		self.assertRaises(frappe.ValidationError, so2.submit)
 
 
 test_records = frappe.get_test_records("Quotation")

@@ -185,6 +185,16 @@ class SalesOrder(SellingController):
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		self.status_updater = [
+			{
+				"source_dt": "Sales Order Item",
+				"target_dt": "Quotation Item",
+				"join_field": "quotation_item",
+				"target_field": "ordered_qty",
+				"target_ref_field": "stock_qty",
+				"source_field": "stock_qty",
+			}
+		]
 
 	def onload(self) -> None:
 		super().onload()
@@ -419,6 +429,7 @@ class SalesOrder(SellingController):
 				frappe.throw(_("Row #{0}: Set Supplier for item {1}").format(d.idx, d.item_code))
 
 	def on_submit(self):
+		super().update_prevdoc_status()
 		self.check_credit_limit()
 		self.update_reserved_qty()
 
@@ -1869,12 +1880,13 @@ def get_work_order_items(sales_order, for_raw_material_request=0):
 				if not for_raw_material_request:
 					total_work_order_qty = flt(
 						qb.from_(wo)
-						.select(Sum(wo.qty))
+						.select(Sum(wo.qty - wo.process_loss_qty))
 						.where(
 							(wo.production_item == i.item_code)
 							& (wo.sales_order == so.name)
 							& (wo.sales_order_item == i.name)
 							& (wo.docstatus.lt(2))
+							& (wo.status != "Closed")
 						)
 						.run()[0][0]
 					)

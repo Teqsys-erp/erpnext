@@ -821,7 +821,6 @@ class update_entries_after:
 			if not self.validate_negative_stock(sle):
 				self.wh_data.qty_after_transaction += flt(sle.actual_qty)
 				return
-
 		# Get dynamic incoming/outgoing rate
 		if not self.args.get("sle_id"):
 			self.get_dynamic_incoming_outgoing_rate(sle)
@@ -1170,7 +1169,11 @@ class update_entries_after:
 		diff = self.wh_data.qty_after_transaction + flt(sle.actual_qty) - flt(self.reserved_stock)
 		diff = flt(diff, self.flt_precision)  # respect system precision
 
-		if diff < 0 and abs(diff) > 0.0001:
+		diff_threshold = 0.0001
+		if self.flt_precision > 4:
+			diff_threshold = 10 ** (-1 * self.flt_precision)
+
+		if diff < 0 and abs(diff) > diff_threshold:
 			# negative stock!
 			exc = sle.copy().update({"diff": diff})
 			self.exceptions.setdefault(sle.warehouse, []).append(exc)
@@ -2373,6 +2376,7 @@ def get_incoming_rate_for_inter_company_transfer(sle) -> float:
 	For inter company transfer, incoming rate is the average of the outgoing rate
 	"""
 	rate = 0.0
+	lcv_rate = 0.0
 
 	field = "delivery_note_item" if sle.voucher_type == "Purchase Receipt" else "sales_invoice_item"
 
@@ -2387,7 +2391,15 @@ def get_incoming_rate_for_inter_company_transfer(sle) -> float:
 			"incoming_rate",
 		)
 
-	return rate
+	# add lcv amount in incoming_rate
+	lcv_amount = frappe.db.get_value(
+		f"{sle.voucher_type} Item", sle.voucher_detail_no, "landed_cost_voucher_amount"
+	)
+
+	if lcv_amount:
+		lcv_rate = flt(lcv_amount / abs(sle.actual_qty))
+
+	return rate + lcv_rate
 
 
 def is_internal_transfer(sle):

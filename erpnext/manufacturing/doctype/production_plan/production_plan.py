@@ -478,7 +478,7 @@ class ProductionPlan(Document):
 
 			item_details = get_item_details(data.item_code, throw=False)
 			if self.combine_items:
-				bom_no = item_details.bom_no
+				bom_no = item_details.get("bom_no")
 				if data.get("bom_no"):
 					bom_no = data.get("bom_no")
 
@@ -701,19 +701,21 @@ class ProductionPlan(Document):
 				"project": self.project,
 			}
 
-			key = (d.item_code, d.sales_order, d.sales_order_item, d.warehouse)
+			key = (d.item_code, d.sales_order, d.sales_order_item, d.warehouse, d.planned_start_date)
 			if self.combine_items:
-				key = (d.item_code, d.sales_order, d.warehouse)
+				key = (d.item_code, d.sales_order, d.warehouse, d.planned_start_date)
 
 			if not d.sales_order:
-				key = (d.name, d.item_code, d.warehouse)
+				key = (d.name, d.item_code, d.warehouse, d.planned_start_date)
 
 			if not item_details["project"] and d.sales_order:
 				item_details["project"] = frappe.get_cached_value("Sales Order", d.sales_order, "project")
 
 			if self.get_items_from == "Material Request":
 				item_details.update({"qty": d.planned_qty})
-				item_dict[(d.item_code, d.material_request_item, d.warehouse)] = item_details
+				item_dict[
+					(d.item_code, d.material_request_item, d.warehouse, d.planned_start_date)
+				] = item_details
 			else:
 				item_details.update(
 					{
