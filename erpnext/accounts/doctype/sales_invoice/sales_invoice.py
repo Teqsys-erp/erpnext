@@ -804,11 +804,9 @@ class SalesInvoice(SellingController):
 		if self.pos_profile:
 			pos = frappe.get_doc("POS Profile", self.pos_profile)
 
-		if not self.get("payments") and not for_validate:
-			update_multi_mode_option(self, pos)
-
 		if pos:
 			if not for_validate:
+				update_multi_mode_option(self, pos)
 				self.tax_category = pos.get("tax_category")
 
 			if not for_validate and not self.customer:
@@ -1199,6 +1197,9 @@ class SalesInvoice(SellingController):
 				throw(_("Delivery Note {0} is not submitted").format(d.delivery_note))
 
 	def process_asset_depreciation(self):
+		if self.is_internal_transfer():
+			return
+
 		if (self.is_return and self.docstatus == 2) or (not self.is_return and self.docstatus == 1):
 			self.depreciate_asset_on_sale()
 		else:
@@ -2744,6 +2745,8 @@ def update_multi_mode_option(doc, pos_profile):
 		payment.account = payment_mode.default_account
 		payment.type = payment_mode.type
 
+	mop_refetched = bool(doc.payments) and not doc.is_created_using_pos
+
 	doc.set("payments", [])
 	invalid_modes = []
 	mode_of_payments = [d.mode_of_payment for d in pos_profile.get("payments")]
@@ -2764,6 +2767,12 @@ def update_multi_mode_option(doc, pos_profile):
 		else:
 			msg = _("Please set default Cash or Bank account in Mode of Payments {}")
 		frappe.throw(msg.format(", ".join(invalid_modes)), title=_("Missing Account"))
+
+	if mop_refetched:
+		frappe.toast(
+			_("Payment methods refreshed. Please review before proceeding."),
+			indicator="orange",
+		)
 
 
 def get_all_mode_of_payments(doc):
